@@ -31,6 +31,16 @@ class RPS(ndb.Model):
     	game.put()
     	return game
 
+    def end_game(self, won=False):
+        """Ends the game - if won is True, the player won. - if won is False,
+        the player lost."""
+        self.game_over = True
+        self.put()
+        # Add the game to the score 'board'
+        # score = Score(user=self.user, date=date.today(), game_won=won,
+        #               rounds_won = self.)
+        # score.put()
+
 
 class GameForm(messages.Message):
     """GameForm for outbound game state information"""
@@ -57,3 +67,14 @@ class ScoreForm(message.Message):
     game_won = messages.BooleanField(3, required=True)
     rounds_won = messages.IntegerField(4, required=True)
     rounds_total = messsages.IntegerProperty(5, required=True)
+
+
+class MoveOptions(messages.Enum):
+    """RPS - enumeration value"""
+    ROCK = 1
+    PAPER = 2
+    SCISSOR = 3
+
+class Hello(messages.Message):
+    """String that stores a message."""
+    greeting = messages.StringField(1)
