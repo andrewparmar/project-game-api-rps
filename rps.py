@@ -7,21 +7,21 @@ rps-api.py -- Udacity Game-API server-side Python App Engine API;
 
 # __author__ = 'andrew.parmar@gmail.com'
 
+import random
 import endpoints
 from protorpc import message_types
 from protorpc import messages
 from protorpc import remote
 
 from models import User, RPS
-from models import StringMessage, GameForm, MakeMoveForm, OutcomeForm
+from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, OutcomeForm
 
 from utils import get_by_urlsafe
 
 
 USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
                                            email=messages.StringField(2))
-NEW_GAME_REQUEST = endpoints.ResourceContainer(
-    user_name=messages.StringField(1))
+NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
 GET_GAME_REQUEST = endpoints.ResourceContainer(
     urlsafe_game_key=messages.StringField(1))
 MAKE_MOVE_REQUEST = endpoints.ResourceContainer(MakeMoveForm)
@@ -57,8 +57,9 @@ class RPSApi(remote.Service):
         user = User(name=request.user_name, email=request.email)
         user.put()
         return StringMessage(message='User {} created!'.format(
-            request.user_name))
+                             request.user_name))
 
+    # Create a new game.
     @endpoints.method(request_message=NEW_GAME_REQUEST,
                       response_message=GameForm,
                       name='new_game',
@@ -71,7 +72,7 @@ class RPSApi(remote.Service):
             raise endpoints.NotFoundException(
                 'A User with that name does not exist!')
         try:
-            game = RPS.new_game(user.key)
+            game = RPS.new_game(user.key, request.total_rounds)
         except:
             pass
         return game.to_form('Limber Up! Its rock paper scissor time!')
@@ -83,7 +84,7 @@ class RPSApi(remote.Service):
                       http_method='GET')
     def get_game(self, request):
         """Return the current game state."""
-        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        game = get_by_urlsafe(request.urlsafe_game_key, RPS)
         if game:
             return game.to_form('Time to make a move!')
         else:
@@ -100,11 +101,24 @@ class RPSApi(remote.Service):
         if not user:
             raise endpoints.NotFoundException(
                 'A User with that name does not exist!')
-        play = getattr(request, "play")
-        print play
         name = getattr(request, "user_name")
         print name
+
+        game = get_by_urlsafe(request.urlsafe_game_key, RPS)
+        if game.game_over:
+            return game.to_form('Game already over! Start a New Game')
+
+        play = getattr(request, "play")
+        print play
+        print computer_move()
+
         return Hello(greeting="Hello World")
         # return OutcomeForm(user_name=name, message="Well Hello World")
+
+    def computer_move(self):
+        """Returns a random choice from Rock-Paper-Scissors"""
+
+        move_options = ['Rock', 'Paper', 'Scissors']
+        return random.choice(move_options)
 
 APPLICATION = endpoints.api_server([RPSApi])

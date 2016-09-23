@@ -27,7 +27,7 @@ class RPS(ndb.Model):
     user = ndb.KeyProperty(required=True, kind='User')
 
     @classmethod
-    def new_game(cls, user, rounds=3):
+    def new_game(cls, user, rounds):
         """Creates and returns a new rps game
         """
         game = RPS(user=user,
@@ -43,19 +43,25 @@ class RPS(ndb.Model):
         form.urlsafe_key = self.key.urlsafe()
         form.user_name = self.user.get().name
         form.game_over = self.game_over
-        # form.attempts_remaining = self.attempts_remaining
+        form.rounds_total = self.rounds_total
+        form.rounds_remaining = self.rounds_remaining
         form.message = message
         return form
 
 
 class GameForm(messages.Message):
     """GameForm for outbound game state information"""
-    # user_name = messages.StringField(1, required=True)
     urlsafe_key = messages.StringField(1, required=True)
     user_name = messages.StringField(2, required=True)
     game_over = messages.BooleanField(3, required=True)
     message = messages.StringField(4, required=True)
-    # rounds_remaining = messages.IntegerField(5, required=True)
+    rounds_remaining = messages.IntegerField(5, required=True)
+    rounds_total = messages.IntegerField(6, required=True)
+
+class NewGameForm(messages.Message):
+    """Used to create a new game"""
+    user_name = messages.StringField(1, required=True)
+    total_rounds = messages.IntegerField(5, default=5)
 
 
 class MakeMoveForm(messages.Message):
