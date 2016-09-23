@@ -12,12 +12,19 @@ from protorpc import message_types
 from protorpc import messages
 from protorpc import remote
 
-from models import User
-from models import StringMessage
+from models import User, RPS
+from models import StringMessage, GameForm, MakeMoveForm, OutcomeForm
+
+from utils import get_by_urlsafe
 
 
 USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
                                            email=messages.StringField(2))
+NEW_GAME_REQUEST = endpoints.ResourceContainer(
+    user_name=messages.StringField(1))
+GET_GAME_REQUEST = endpoints.ResourceContainer(
+    urlsafe_game_key=messages.StringField(1))
+MAKE_MOVE_REQUEST = endpoints.ResourceContainer(MakeMoveForm)
 
 
 class Hello(messages.Message):
@@ -39,7 +46,7 @@ class RPSApi(remote.Service):
 
     @endpoints.method(request_message=USER_REQUEST,
                       response_message=StringMessage,
-                      path='user',
+                      path='create_user',
                       name='create_user',
                       http_method='POST')
     def create_user(self, request):
@@ -49,7 +56,55 @@ class RPSApi(remote.Service):
                 'A User with that name already exists!')
         user = User(name=request.user_name, email=request.email)
         user.put()
-        return StringMessage(message='User {} created!'.format(request.user_name))
+        return StringMessage(message='User {} created!'.format(
+            request.user_name))
 
+    @endpoints.method(request_message=NEW_GAME_REQUEST,
+                      response_message=GameForm,
+                      name='new_game',
+                      path='new_game',
+                      http_method='POST')
+    def new_game(self, request):
+        """Create a new game"""
+        user = User.query(User.name == request.user_name).get()
+        if not user:
+            raise endpoints.NotFoundException(
+                'A User with that name does not exist!')
+        try:
+            game = RPS.new_game(user.key)
+        except:
+            pass
+        return game.to_form('Limber Up! Its rock paper scissor time!')
+
+    @endpoints.method(request_message=GET_GAME_REQUEST,
+                      response_message=GameForm,
+                      path='game/{urlsafe_game_key}',
+                      name='get_game',
+                      http_method='GET')
+    def get_game(self, request):
+        """Return the current game state."""
+        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        if game:
+            return game.to_form('Time to make a move!')
+        else:
+            raise endpoints.NotFoundException('Game not found!')
+
+    @endpoints.method(request_message=MAKE_MOVE_REQUEST,
+                      response_message=Hello,
+                      path='make_move',
+                      name='make_move',
+                      http_method='POST')
+    def make_move(self, request):
+        name = getattr(request, "user_name")
+        user = User.query(User.name == name).get()
+        if not user:
+            raise endpoints.NotFoundException(
+                'A User with that name does not exist!')
+        play = getattr(request, "play")
+        print play
+        name = getattr(request, "user_name")
+        print name
+        return Hello(greeting="Hello World")
+        # return OutcomeForm(user_name=name, message="Well Hello World")
 
 APPLICATION = endpoints.api_server([RPSApi])
