@@ -24,7 +24,8 @@ USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
 GET_GAME_REQUEST = endpoints.ResourceContainer(
     urlsafe_game_key=messages.StringField(1))
-MAKE_MOVE_REQUEST = endpoints.ResourceContainer(MakeMoveForm)
+MAKE_MOVE_REQUEST = endpoints.ResourceContainer(MakeMoveForm,
+	urlsafe_game_key=messages.StringField(1),)
 
 
 class Hello(messages.Message):
@@ -44,6 +45,7 @@ class RPSApi(remote.Service):
     def say_hello(self, unused_request):
         return Hello(greeting="Hello World")
 
+    # Create a new user
     @endpoints.method(request_message=USER_REQUEST,
                       response_message=StringMessage,
                       path='create_user',
@@ -77,6 +79,7 @@ class RPSApi(remote.Service):
             pass
         return game.to_form('Limber Up! Its rock paper scissor time!')
 
+    # Get the status of any game
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=GameForm,
                       path='game/{urlsafe_game_key}',
@@ -86,12 +89,16 @@ class RPSApi(remote.Service):
         """Return the current game state."""
         game = get_by_urlsafe(request.urlsafe_game_key, RPS)
         if game:
-            return game.to_form('Time to make a move!')
+            if game.game_over:
+            	return game.to_form('Game is over. Stat a new game.')
+            else:
+            	return game.to_form('Time to make a move!')
         else:
             raise endpoints.NotFoundException('Game not found!')
 
+    # User makes a move (Actual gameplay)
     @endpoints.method(request_message=MAKE_MOVE_REQUEST,
-                      response_message=Hello,
+                      response_message=GameForm,
                       path='make_move',
                       name='make_move',
                       http_method='POST')
@@ -101,19 +108,15 @@ class RPSApi(remote.Service):
         if not user:
             raise endpoints.NotFoundException(
                 'A User with that name does not exist!')
-        name = getattr(request, "user_name")
-        print name
+        # print name, user.name
 
         game = get_by_urlsafe(request.urlsafe_game_key, RPS)
         if game.game_over:
             return game.to_form('Game already over! Start a New Game')
+        else:
+        	game.rounds_remaining = game.rounds_remaining - 1
+        	return game.to_form('You just made a move')
 
-        play = getattr(request, "play")
-        print play
-        print computer_move()
-
-        return Hello(greeting="Hello World")
-        # return OutcomeForm(user_name=name, message="Well Hello World")
 
     def computer_move(self):
         """Returns a random choice from Rock-Paper-Scissors"""

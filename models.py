@@ -68,7 +68,6 @@ class MakeMoveForm(messages.Message):
     """Used to make a move in an existing game"""
     user_name = messages.StringField(1, required=True)
     play = messages.EnumField('MoveOptions', 2, required=True)
-    # teeShirtSize = messages.EnumField('TeeShirtSize', 2)
 
 
 class MoveOptions(messages.Enum):
