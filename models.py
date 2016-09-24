@@ -25,8 +25,8 @@ class RPS(ndb.Model):
     rounds_remaining = ndb.IntegerProperty(required=True, default=5)
     game_over = ndb.BooleanProperty(required=True, default=False)
     user = ndb.KeyProperty(required=True, kind='User')
-    # player_wins = ndb.IntegerProperty(required=True, default=0)
-    # computer_wins = ndb.IntegerProperty(required=True, default=0)
+    player_points = ndb.IntegerProperty(required=True, default=0)
+    computer_points = ndb.IntegerProperty(required=True, default=0)
 
     @classmethod
     def new_game(cls, user, rounds):
@@ -35,7 +35,8 @@ class RPS(ndb.Model):
         game = RPS(user=user,
                    rounds_total=rounds,
                    rounds_remaining=rounds,
-                   game_over=False)
+                   game_over=False,
+                   )
         game.put()
         return game
 
@@ -48,7 +49,17 @@ class RPS(ndb.Model):
         form.rounds_total = self.rounds_total
         form.rounds_remaining = self.rounds_remaining
         form.message = message
+        form.player_points = self.player_points
+        form.computer_points = self.computer_points
         return form
+
+    def end_game(self, player_points, computer_points):
+        self.game_over = True
+        score = 0
+        if player_points > computer_points:
+            score = player_points - computer_points
+        print "Players final score is:", score
+        return "Jello World"
 
 
 class GameForm(messages.Message):
@@ -59,6 +70,9 @@ class GameForm(messages.Message):
     message = messages.StringField(4, required=True)
     rounds_remaining = messages.IntegerField(5, required=True)
     rounds_total = messages.IntegerField(6, required=True)
+    player_points = messages.IntegerField(7, required=True)
+    computer_points = messages.IntegerField(8, required=True)
+
 
 class NewGameForm(messages.Message):
     """Used to create a new game"""
@@ -76,7 +90,7 @@ class MoveOptions(messages.Enum):
     """RPS - enumeration value"""
     ROCK = 1
     PAPER = 2
-    SCISSOR = 3
+    SCISSORS = 3
 
 
 # class OutcomeForm(messages.Message):

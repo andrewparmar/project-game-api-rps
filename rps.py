@@ -117,31 +117,31 @@ class RPSApi(remote.Service):
 
         game = get_by_urlsafe(request.urlsafe_game_key, RPS)
         if game.game_over:
-            return game.to_form('Game already over! Start a New Game')
+            return game.to_form('Game Over! Start a New Game')
         else:
-            game.rounds_remaining = game.rounds_remaining - 1
-            if game.rounds_remaining == 0:
-                game.game_over = True
-            game.put()
-
-        ######################################################
-
             rules = {"ROCK": "SCISSORS", "PAPER": "ROCK", "SCISSORS": "PAPER"}
 
             player = str(getattr(request, "play"))
             computer = self.computer_move()
             message = "test"
-            print message
+            # print message
             print rules[player]
             if computer == player:
                 message = "Its a tie!"
             elif rules[player] == computer:
-                message = "Player wins!"
+                message = "Player wins this round!"
+                game.player_points = game.player_points + 1
             else:
-                message = "Computer wins!"
+                message = "Computer wins this round!"
+                game.computer_points = game.computer_points + 1
+
+            game.rounds_remaining = game.rounds_remaining - 1
+            if game.rounds_remaining == 0:
+                game.end_game(game.player_points, game.computer_points)
+                # game.game_over = True
+            game.put()
 
             return game.to_form("Computer played %s. %s" % (computer, message))
-            # return game.to_form("YOu made a move")
 
 
 APPLICATION = endpoints.api_server([RPSApi])
