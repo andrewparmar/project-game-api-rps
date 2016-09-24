@@ -25,6 +25,8 @@ class RPS(ndb.Model):
     rounds_remaining = ndb.IntegerProperty(required=True, default=5)
     game_over = ndb.BooleanProperty(required=True, default=False)
     user = ndb.KeyProperty(required=True, kind='User')
+    # player_wins = ndb.IntegerProperty(required=True, default=0)
+    # computer_wins = ndb.IntegerProperty(required=True, default=0)
 
     @classmethod
     def new_game(cls, user, rounds):
@@ -77,8 +79,8 @@ class MoveOptions(messages.Enum):
     SCISSOR = 3
 
 
-class OutcomeForm(messages.Message):
-    """OutcomeForm for outbound round result information"""
-    urlsafe_key = messages.StringField(1, required=True)
-    user_name = messages.StringField(2, required=True)
-    message = messages.StringField(4, required=True)
+# class OutcomeForm(messages.Message):
+#     """OutcomeForm for outbound round result information"""
+#     urlsafe_key = messages.StringField(1, required=True)
+#     user_name = messages.StringField(2, required=True)
+#     message = messages.StringField(4, required=True)

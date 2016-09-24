@@ -14,7 +14,7 @@ from protorpc import messages
 from protorpc import remote
 
 from models import User, RPS
-from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, OutcomeForm
+from models import StringMessage, NewGameForm, GameForm, MakeMoveForm
 
 from utils import get_by_urlsafe
 
@@ -25,7 +25,7 @@ NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
 GET_GAME_REQUEST = endpoints.ResourceContainer(
     urlsafe_game_key=messages.StringField(1))
 MAKE_MOVE_REQUEST = endpoints.ResourceContainer(MakeMoveForm,
-	urlsafe_game_key=messages.StringField(1),)
+                                                urlsafe_game_key=messages.StringField(1),)
 
 
 class Hello(messages.Message):
@@ -90,11 +90,17 @@ class RPSApi(remote.Service):
         game = get_by_urlsafe(request.urlsafe_game_key, RPS)
         if game:
             if game.game_over:
-            	return game.to_form('Game is over. Stat a new game.')
+                return game.to_form('Game is over. Stat a new game.')
             else:
-            	return game.to_form('Time to make a move!')
+                return game.to_form('Time to make a move!')
         else:
             raise endpoints.NotFoundException('Game not found!')
+
+    def computer_move(self):
+        """Returns a random choice from Rock-Paper-Scissors"""
+
+        move_options = ['ROCK', 'PAPER', 'SCISSORS']
+        return random.choice(move_options)
 
     # User makes a move (Actual gameplay)
     @endpoints.method(request_message=MAKE_MOVE_REQUEST,
@@ -108,20 +114,34 @@ class RPSApi(remote.Service):
         if not user:
             raise endpoints.NotFoundException(
                 'A User with that name does not exist!')
-        # print name, user.name
 
         game = get_by_urlsafe(request.urlsafe_game_key, RPS)
         if game.game_over:
             return game.to_form('Game already over! Start a New Game')
         else:
-        	game.rounds_remaining = game.rounds_remaining - 1
-        	return game.to_form('You just made a move')
+            game.rounds_remaining = game.rounds_remaining - 1
+            if game.rounds_remaining == 0:
+                game.game_over = True
+            game.put()
 
+        ######################################################
 
-    def computer_move(self):
-        """Returns a random choice from Rock-Paper-Scissors"""
+            rules = {"ROCK": "SCISSORS", "PAPER": "ROCK", "SCISSORS": "PAPER"}
 
-        move_options = ['Rock', 'Paper', 'Scissors']
-        return random.choice(move_options)
+            player = str(getattr(request, "play"))
+            computer = self.computer_move()
+            message = "test"
+            print message
+            print rules[player]
+            if computer == player:
+                message = "Its a tie!"
+            elif rules[player] == computer:
+                message = "Player wins!"
+            else:
+                message = "Computer wins!"
+
+            return game.to_form("Computer played %s. %s" % (computer, message))
+            # return game.to_form("YOu made a move")
+
 
 APPLICATION = endpoints.api_server([RPSApi])
