@@ -56,9 +56,15 @@ class RPS(ndb.Model):
     def end_game(self, player_points, computer_points):
         self.game_over = True
         score = 0
+        game_won = False
         if player_points > computer_points:
             score = player_points - computer_points
-        print "Players final score is:", score
+            game_won = True
+        # print "Players final score is:", score
+        # print self.user.get().key
+        new_score = Score(user=self.user.get().key,
+                          game_won=game_won, points=score)
+        new_score.put()
         return "Jello World"
 
 
@@ -93,8 +99,26 @@ class MoveOptions(messages.Enum):
     SCISSORS = 3
 
 
-# class OutcomeForm(messages.Message):
-#     """OutcomeForm for outbound round result information"""
-#     urlsafe_key = messages.StringField(1, required=True)
-#     user_name = messages.StringField(2, required=True)
-#     message = messages.StringField(4, required=True)
+class Score(ndb.Model):
+    """Score object"""
+    user = ndb.KeyProperty(required=True, kind='User')
+    # date = ndb.DateProperty(required=True)
+    game_won = ndb.BooleanProperty(required=True)
+    points = ndb.IntegerProperty(required=True)
+
+    def to_form(self):
+        return ScoreForm(user_name=self.user.get().name, game_won=self.game_won,
+                     total_points=self.points)
+
+
+class ScoreForm(messages.Message):
+    """ScoreForm for outbound Score information"""
+    user_name = messages.StringField(1, required=True)
+    # date = messages.StringField(2, required=True)
+    game_won = messages.BooleanField(2, required=True)
+    total_points = messages.IntegerField(3, required=True)
+
+
+class ScoreForms(messages.Message):
+    """Return multiple ScoreForms"""
+    items = messages.MessageField(ScoreForm, 1, repeated=True)

@@ -13,8 +13,8 @@ from protorpc import message_types
 from protorpc import messages
 from protorpc import remote
 
-from models import User, RPS
-from models import StringMessage, NewGameForm, GameForm, MakeMoveForm
+from models import User, RPS, Score
+from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, ScoreForms
 
 from utils import get_by_urlsafe
 
@@ -26,6 +26,8 @@ GET_GAME_REQUEST = endpoints.ResourceContainer(
     urlsafe_game_key=messages.StringField(1))
 MAKE_MOVE_REQUEST = endpoints.ResourceContainer(MakeMoveForm,
                                                 urlsafe_game_key=messages.StringField(1),)
+USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
+                                           email=messages.StringField(2))
 
 
 class Hello(messages.Message):
@@ -123,9 +125,7 @@ class RPSApi(remote.Service):
 
             player = str(getattr(request, "play"))
             computer = self.computer_move()
-            message = "test"
-            # print message
-            print rules[player]
+            # print rules[player]
             if computer == player:
                 message = "Its a tie!"
             elif rules[player] == computer:
@@ -138,10 +138,34 @@ class RPSApi(remote.Service):
             game.rounds_remaining = game.rounds_remaining - 1
             if game.rounds_remaining == 0:
                 game.end_game(game.player_points, game.computer_points)
-                # game.game_over = True
+
             game.put()
 
             return game.to_form("Computer played %s. %s" % (computer, message))
+
+    @endpoints.method(response_message=ScoreForms,
+                      path='scores',
+                      name='get_scores',
+                      http_method='GET')
+    def get_scores(self, request):
+        """Return all scores"""
+        return ScoreForms(items=[score.to_form() for score in Score.query()])
+
+    @endpoints.method(request_message=USER_REQUEST,
+                      # response_message=ScoreForms,
+                      response_message=ScoreForms,
+                      path='scores/user/{user_name}',
+                      name='get_user_scores',
+                      http_method='GET')
+    def get_user_scores(self, request):
+        """Returns all of an individual User's scores"""
+        user = User.query(User.name == request.user_name).get()
+        if not user:
+            raise endpoints.NotFoundException(
+                'A User with that name does not exist!')
+        scores = Score.query(Score.user == user.key)
+        return ScoreForms(items=[score.to_form() for score in scores])
+        # return Hello(greeting="Hello World")
 
 
 APPLICATION = endpoints.api_server([RPSApi])
