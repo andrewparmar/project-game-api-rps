@@ -2,9 +2,8 @@
 entities used by the game Rock-Paper-Scissors.
 """
 
-import random
 from datetime import date
-from protorpc import messages
+from protorpc import messages, message_types
 from google.appengine.ext import ndb
 
 
@@ -62,7 +61,7 @@ class RPS(ndb.Model):
             game_won = True
         # print "Players final score is:", score
         # print self.user.get().key
-        new_score = Score(user=self.user.get().key,
+        new_score = Score(user=self.user.get().key, date=date.today(),
                           game_won=game_won, points=score)
         new_score.put()
         return "Jello World"
@@ -102,21 +101,23 @@ class MoveOptions(messages.Enum):
 class Score(ndb.Model):
     """Score object"""
     user = ndb.KeyProperty(required=True, kind='User')
-    # date = ndb.DateProperty(required=True)
+    date = ndb.DateProperty(required=True)
     game_won = ndb.BooleanProperty(required=True)
     points = ndb.IntegerProperty(required=True)
 
     def to_form(self):
-        return ScoreForm(user_name=self.user.get().name, game_won=self.game_won,
-                     total_points=self.points)
+        return ScoreForm(user_name=self.user.get().name,
+                         date=str(self.date),
+                         game_won=self.game_won,
+                         total_points=self.points)
 
 
 class ScoreForm(messages.Message):
     """ScoreForm for outbound Score information"""
     user_name = messages.StringField(1, required=True)
-    # date = messages.StringField(2, required=True)
-    game_won = messages.BooleanField(2, required=True)
-    total_points = messages.IntegerField(3, required=True)
+    date = messages.StringField(2, required=True)
+    game_won = messages.BooleanField(3, required=True)
+    total_points = messages.IntegerField(4, required=True)
 
 
 class ScoreForms(messages.Message):

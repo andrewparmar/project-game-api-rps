@@ -12,6 +12,7 @@ import endpoints
 from protorpc import message_types
 from protorpc import messages
 from protorpc import remote
+from google.appengine.ext import ndb
 
 from models import User, RPS, Score
 from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, ScoreForms
@@ -58,7 +59,9 @@ class RPSApi(remote.Service):
         if User.query(User.name == request.user_name).get():
             raise endpoints.ConflictException(
                 'A User with that name already exists!')
-        user = User(name=request.user_name, email=request.email)
+        user_key = ndb.Key(User, request.email)
+        print user_key
+        user = User(key=user_key, name=request.user_name, email=request.email)
         user.put()
         return StringMessage(message='User {} created!'.format(
                              request.user_name))
@@ -76,6 +79,9 @@ class RPSApi(remote.Service):
             raise endpoints.NotFoundException(
                 'A User with that name does not exist!')
         try:
+            user_key = user.key
+            print user_key
+            # p_key = ndb.Key(User, user)
             game = RPS.new_game(user.key, request.total_rounds)
         except:
             pass
