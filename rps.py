@@ -203,22 +203,9 @@ class RPSApi(remote.Service):
     def get_user_games(self, request):
         """Returns all of a User's active games"""
         user = User.query(User.name == request.user_name).get()
-        print "test", user
-        print user.email
-        # u_key = ndb.Key(User, user.email)
-        # gamez = RPS.query(RPS.user == user.key).get()
+        # print "test", user
+        # print user.email
         gamez = RPS.query(ancestor=ndb.Key(User, user.email))
-        # print gamez
-        # # return GameForm(items=[self._copyConferenceToForm(conf, getattr(prof, 'displayName')) for conf in confs])
-        # # for game in gamez:
-        # #     message = "test"
-        # #     return game.to_form(message)
-        # return GameForms(items=[self._to_form(gaym) for gaym in gamez])
         return GameForms(items=[gaym.to_form("test") for gaym in gamez])
-
-        # return Hello(greeting="Hello World")
-
-
-
 
 APPLICATION = endpoints.api_server([RPSApi])
