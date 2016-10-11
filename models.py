@@ -10,7 +10,7 @@ from google.appengine.ext import ndb
 class User(ndb.Model):
     """User profile"""
     name = ndb.StringProperty(required=True)
-    email = ndb.StringProperty()
+    email = ndb.StringProperty(required=True)
 
 
 class StringMessage(messages.Message):
@@ -28,10 +28,11 @@ class RPS(ndb.Model):
     computer_points = ndb.IntegerProperty(required=True, default=0)
 
     @classmethod
-    def new_game(cls, user, rounds):
+    def new_game(cls, key, user, rounds):
         """Creates and returns a new rps game
         """
-        game = RPS(user=user,
+        game = RPS(key=key,
+                   user=user,
                    rounds_total=rounds,
                    rounds_remaining=rounds,
                    game_over=False,
@@ -77,6 +78,10 @@ class GameForm(messages.Message):
     rounds_total = messages.IntegerField(6, required=True)
     player_points = messages.IntegerField(7, required=True)
     computer_points = messages.IntegerField(8, required=True)
+
+class GameForms(messages.Message):
+    """GameForms -- multiple RPS outbound form message"""
+    items = messages.MessageField(GameForm, 1, repeated=True)
 
 
 class NewGameForm(messages.Message):

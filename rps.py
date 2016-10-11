@@ -16,6 +16,7 @@ from google.appengine.ext import ndb
 
 from models import User, RPS, Score
 from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, ScoreForms
+from models import GameForms
 
 from utils import get_by_urlsafe
 
@@ -29,6 +30,8 @@ MAKE_MOVE_REQUEST = endpoints.ResourceContainer(MakeMoveForm,
                                                 urlsafe_game_key=messages.StringField(1),)
 USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
                                            email=messages.StringField(2))
+USER_GAME_REQUEST = endpoints.ResourceContainer(
+    user_name=messages.StringField(1))
 
 
 class Hello(messages.Message):
@@ -60,6 +63,7 @@ class RPSApi(remote.Service):
             raise endpoints.ConflictException(
                 'A User with that name already exists!')
         user_key = ndb.Key(User, request.email)
+        print request.email
         print user_key
         user = User(key=user_key, name=request.user_name, email=request.email)
         user.put()
@@ -81,11 +85,30 @@ class RPSApi(remote.Service):
         try:
             user_key = user.key
             print user_key
-            # p_key = ndb.Key(User, user)
-            game = RPS.new_game(user.key, request.total_rounds)
+            print user.email
+            u_key = ndb.Key(User, user.email)
+            print hash(u_key)
+            game_id = RPS.allocate_ids(size=1, parent=u_key)[0]
+            game_key = ndb.Key(RPS, game_id, parent=u_key)
+            game = RPS.new_game(game_key,user.key, request.total_rounds)
+            game.put()
         except:
             pass
         return game.to_form('Limber Up! Its rock paper scissor time!')
+
+    # def _to_form(self, gaym):
+    #     """Returns a GameForm """
+    #     form = GameForm()
+    #     for field in form.all_fields():
+    #         print field, field.name
+    #         if field.name == "message":
+    #           print "test"
+    #         elif field.name == "user_name":
+    #           print "test"
+    #         else:
+    #           setattr(form, field.name, getattr(gaym, field.name))
+    #     form.check_initialized()
+    #     return form
 
     # Get the status of any game
     @endpoints.method(request_message=GET_GAME_REQUEST,
@@ -158,7 +181,6 @@ class RPSApi(remote.Service):
         return ScoreForms(items=[score.to_form() for score in Score.query()])
 
     @endpoints.method(request_message=USER_REQUEST,
-                      # response_message=ScoreForms,
                       response_message=ScoreForms,
                       path='scores/user/{user_name}',
                       name='get_user_scores',
@@ -172,6 +194,31 @@ class RPSApi(remote.Service):
         scores = Score.query(Score.user == user.key)
         return ScoreForms(items=[score.to_form() for score in scores])
         # return Hello(greeting="Hello World")
+
+    @endpoints.method(request_message=USER_GAME_REQUEST,
+                      response_message=GameForms,
+                      path='games/{user_name}',
+                      name='get_user_games',
+                      http_method='GET')
+    def get_user_games(self, request):
+        """Returns all of a User's active games"""
+        user = User.query(User.name == request.user_name).get()
+        print "test", user
+        print user.email
+        # u_key = ndb.Key(User, user.email)
+        # gamez = RPS.query(RPS.user == user.key).get()
+        gamez = RPS.query(ancestor=ndb.Key(User, user.email))
+        # print gamez
+        # # return GameForm(items=[self._copyConferenceToForm(conf, getattr(prof, 'displayName')) for conf in confs])
+        # # for game in gamez:
+        # #     message = "test"
+        # #     return game.to_form(message)
+        # return GameForms(items=[self._to_form(gaym) for gaym in gamez])
+        return GameForms(items=[gaym.to_form("test") for gaym in gamez])
+
+        # return Hello(greeting="Hello World")
+
+
 
 
 APPLICATION = endpoints.api_server([RPSApi])
