@@ -90,7 +90,7 @@ class RPSApi(remote.Service):
             print hash(u_key)
             game_id = RPS.allocate_ids(size=1, parent=u_key)[0]
             game_key = ndb.Key(RPS, game_id, parent=u_key)
-            game = RPS.new_game(game_key,user.key, request.total_rounds)
+            game = RPS.new_game(game_key, user.key, request.total_rounds)
             game.put()
         except:
             pass
@@ -149,6 +149,8 @@ class RPSApi(remote.Service):
         game = get_by_urlsafe(request.urlsafe_game_key, RPS)
         if game.game_over:
             return game.to_form('Game Over! Start a New Game')
+        elif game.game_canceled:
+            return game.to_form('Game was canceled. Choose another game to play.')
         else:
             rules = {"ROCK": "SCISSORS", "PAPER": "ROCK", "SCISSORS": "PAPER"}
 
@@ -207,5 +209,27 @@ class RPSApi(remote.Service):
         # print user.email
         gamez = RPS.query(ancestor=ndb.Key(User, user.email))
         return GameForms(items=[gaym.to_form("test") for gaym in gamez])
+
+    @endpoints.method(request_message=GET_GAME_REQUEST,
+                      response_message=GameForm,
+                      # response_message=Hello,
+                      path='games/{urlsafe_game_key}/cancel',
+                      name='cancel_games',
+                      http_method='GET')
+    def cancel_game(self, request):
+        """Allows the user to cancel a game"""
+        game = get_by_urlsafe(request.urlsafe_game_key, RPS)
+        if game:
+            if game.game_over:
+                return game.to_form('Game is already over. Cannot cancel.')
+            elif game.game_canceled:
+                return game.to_form('Game already canceled.')
+            else:
+                game.game_canceled = True
+                game.put()
+                return game.to_form('Game canceled.')
+        else:
+            raise endpoints.NotFoundException('Game not found!')
+        # return Hello(greeting="Hello World")
 
 APPLICATION = endpoints.api_server([RPSApi])

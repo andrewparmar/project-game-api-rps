@@ -26,6 +26,7 @@ class RPS(ndb.Model):
     user = ndb.KeyProperty(required=True, kind='User')
     player_points = ndb.IntegerProperty(required=True, default=0)
     computer_points = ndb.IntegerProperty(required=True, default=0)
+    game_canceled = ndb.BooleanProperty(default=False)
 
     @classmethod
     def new_game(cls, key, user, rounds):
@@ -51,6 +52,7 @@ class RPS(ndb.Model):
         form.message = message
         form.player_points = self.player_points
         form.computer_points = self.computer_points
+        form.game_canceled = self.game_canceled
         return form
 
     def end_game(self, player_points, computer_points):
@@ -78,6 +80,7 @@ class GameForm(messages.Message):
     rounds_total = messages.IntegerField(6, required=True)
     player_points = messages.IntegerField(7, required=True)
     computer_points = messages.IntegerField(8, required=True)
+    game_canceled = messages.BooleanField(9, required=True)
 
 class GameForms(messages.Message):
     """GameForms -- multiple RPS outbound form message"""
