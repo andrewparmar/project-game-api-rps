@@ -16,7 +16,7 @@ from google.appengine.ext import ndb
 
 from models import User, RPS, Score
 from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, ScoreForms
-from models import GameForms
+from models import GameForms, ScoreForm
 
 from utils import get_by_urlsafe
 
@@ -230,6 +230,29 @@ class RPSApi(remote.Service):
                 return game.to_form('Game canceled.')
         else:
             raise endpoints.NotFoundException('Game not found!')
-        # return Hello(greeting="Hello World")
+
+    @endpoints.method(message_types.VoidMessage,
+                      response_message=ScoreForms,
+                      # response_message=Hello,
+                      path='scores/highest',
+                      name='get_high_scores',
+                      http_method='GET')
+    def get_high_scores(self, request):
+        """Allows the user to cancel a game"""
+        scores = Score.query().order(Score.points).order(Score.date)
+        return ScoreForms(items=[score.to_form() for score in scores])
+
+        # game = get_by_urlsafe(request.urlsafe_game_key, RPS)
+        # if game:
+        #     if game.game_over:
+        #         return game.to_form('Game is already over. Cannot cancel.')
+        #     elif game.game_canceled:
+        #         return game.to_form('Game already canceled.')
+        #     else:
+        #         game.game_canceled = True
+        #         game.put()
+        #         return game.to_form('Game canceled.')
+        # else:
+        #     raise endpoints.NotFoundException('Game not found!')
 
 APPLICATION = endpoints.api_server([RPSApi])
