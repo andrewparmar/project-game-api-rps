@@ -16,7 +16,7 @@ from google.appengine.ext import ndb
 
 from models import User, RPS, Score
 from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, ScoreForms
-from models import GameForms, ScoreForm
+from models import GameForms, ScoreForm, HistoryForm, RankForms, RankForm
 
 from utils import get_by_urlsafe
 
@@ -170,6 +170,12 @@ class RPSApi(remote.Service):
             if game.rounds_remaining == 0:
                 game.end_game(game.player_points, game.computer_points)
 
+            move_sumry = "Player:" + player + ",Computer:" + computer + ". " + message
+            print move_sumry
+            print len(game.move_log)
+            game.move_log.append(move_sumry)
+            print game.move_log
+
             game.put()
 
             return game.to_form("Computer played %s. %s" % (computer, message))
@@ -238,21 +244,52 @@ class RPSApi(remote.Service):
                       name='get_high_scores',
                       http_method='GET')
     def get_high_scores(self, request):
-        """Allows the user to cancel a game"""
-        scores = Score.query().order(Score.points).order(Score.date)
+        """Returns the top player scores in descending order"""
+        scores = Score.query().order(-Score.points).order(Score.date)
         return ScoreForms(items=[score.to_form() for score in scores])
 
-        # game = get_by_urlsafe(request.urlsafe_game_key, RPS)
-        # if game:
-        #     if game.game_over:
-        #         return game.to_form('Game is already over. Cannot cancel.')
-        #     elif game.game_canceled:
-        #         return game.to_form('Game already canceled.')
-        #     else:
-        #         game.game_canceled = True
-        #         game.put()
-        #         return game.to_form('Game canceled.')
-        # else:
-        #     raise endpoints.NotFoundException('Game not found!')
+    @endpoints.method(message_types.VoidMessage,
+                      response_message=RankForm,
+                      # response_message=Hello,
+                      path='scores/rank',
+                      name='get_user_rankings',
+                      http_method='GET')
+    def get_user_rankings(self, request):
+        """Returns a ranking of all the players that have played the game"""
+        # users = User.query()
+        # for user in users:
+        #   points = 0
+        #   rounds = 0
+        #   print user.name
+        #   print ndb.Key(User, user.name)
+        #   scores = Score.query(Score.user==ndb.Key(User, user.email))
+        #   for score in scores:
+        #     points = points + score.points
+        #     print "points:", points
+        #     rounds = rounds + score.rounds
+        #     print "rounds:", rounds
+
+        # # return ScoreForms(items=[score.to_form() for score in scores])
+        users = User.query().order(User.win_rate)
+        for user in users:
+          print user.name
+        return RankForms(items=[user.to_form() for user in users])    
+        # return Hello(greeting="Hello World")
+
+
+    @endpoints.method(request_message=GET_GAME_REQUEST,
+                      response_message=HistoryForm,
+                      # response_message=Hello,
+                      path='games/{urlsafe_game_key}/history',
+                      name='get_game_history',
+                      http_method='GET')
+    def get_game_history(self, request):
+        """Allows the user to cancel a game"""
+        game = get_by_urlsafe(request.urlsafe_game_key, RPS)
+        print game.move_log
+
+        return game.game_history()
+        # return Hello(greeting="Hello World")
+
 
 APPLICATION = endpoints.api_server([RPSApi])

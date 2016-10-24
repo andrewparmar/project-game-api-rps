@@ -11,6 +11,28 @@ class User(ndb.Model):
     """User profile"""
     name = ndb.StringProperty(required=True)
     email = ndb.StringProperty(required=True)
+    win_rate = ndb.FloatProperty(default=0)
+
+    @classmethod
+    def to_form(self):
+        """Returns a GameForm representation of the Game"""
+        form = RankForm()
+        form.name = self.name
+        form.email = self.email
+        form.win_rate = self.win_rate
+        return form
+
+
+class RankForm(messages.Message):
+    """GameForm for outbound game state information"""
+    name = messages.StringField(1, required=True)
+    email = messages.StringField(2, required=True)
+    win_rate = messages.FloatField(3)
+
+
+class RankForms(messages.Message):
+    """RankForms -- multiple User rank outbound form message"""
+    items = messages.MessageField(RankForm, 1, repeated=True)
 
 
 class StringMessage(messages.Message):
@@ -27,6 +49,7 @@ class RPS(ndb.Model):
     player_points = ndb.IntegerProperty(required=True, default=0)
     computer_points = ndb.IntegerProperty(required=True, default=0)
     game_canceled = ndb.BooleanProperty(default=False)
+    move_log = ndb.StringProperty(repeated=True)
 
     @classmethod
     def new_game(cls, key, user, rounds):
@@ -59,15 +82,26 @@ class RPS(ndb.Model):
         self.game_over = True
         score = 0
         game_won = False
+        rounds = player_points + computer_points
         if player_points > computer_points:
             score = player_points - computer_points
             game_won = True
         # print "Players final score is:", score
         # print self.user.get().key
         new_score = Score(user=self.user.get().key, date=date.today(),
-                          game_won=game_won, points=score)
+                          game_won=game_won, points=score, rounds=rounds)
         new_score.put()
+        game_player = self.user.get()
+        game_player.win_rate = float(score) / rounds
+        game_player.put()
         return "Jello World"
+
+    def game_history(self):
+        form = HistoryForm()
+        form.user_name = self.user.get().name
+        form.urlsafe_key = self.key.urlsafe()
+        form.move_log = self.move_log
+        return form
 
 
 class GameForm(messages.Message):
@@ -81,6 +115,7 @@ class GameForm(messages.Message):
     player_points = messages.IntegerField(7, required=True)
     computer_points = messages.IntegerField(8, required=True)
     game_canceled = messages.BooleanField(9, required=True)
+
 
 class GameForms(messages.Message):
     """GameForms -- multiple RPS outbound form message"""
@@ -99,6 +134,13 @@ class MakeMoveForm(messages.Message):
     play = messages.EnumField('MoveOptions', 2, required=True)
 
 
+class HistoryForm(messages.Message):
+    """Return the complete list of moves played in the game"""
+    urlsafe_key = messages.StringField(1, required=True)
+    user_name = messages.StringField(2, required=True)
+    move_log = messages.StringField(3, repeated=True)
+
+
 class MoveOptions(messages.Enum):
     """RPS - enumeration value"""
     ROCK = 1
@@ -112,12 +154,14 @@ class Score(ndb.Model):
     date = ndb.DateProperty(required=True)
     game_won = ndb.BooleanProperty(required=True)
     points = ndb.IntegerProperty(required=True)
+    rounds = ndb.IntegerProperty(required=True)
 
     def to_form(self):
         return ScoreForm(user_name=self.user.get().name,
                          date=str(self.date),
                          game_won=self.game_won,
-                         total_points=self.points)
+                         total_points=self.points,
+                         total_rounds=self.rounds)
 
 
 class ScoreForm(messages.Message):
@@ -126,6 +170,7 @@ class ScoreForm(messages.Message):
     date = messages.StringField(2, required=True)
     game_won = messages.BooleanField(3, required=True)
     total_points = messages.IntegerField(4, required=True)
+    total_rounds = messages.IntegerField(5, required=True)
 
 
 class ScoreForms(messages.Message):
