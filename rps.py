@@ -15,8 +15,9 @@ from protorpc import remote
 from google.appengine.ext import ndb
 
 from models import User, RPS, Score
-from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, ScoreForms
-from models import GameForms, ScoreForm, HistoryForm, RankForms, RankForm
+from models import StringMessage, NewGameForm
+from models import GameForm, MakeMoveForm, ScoreForms, GameForms
+from models import HistoryForm, RankForms
 
 from utils import get_by_urlsafe
 
@@ -63,8 +64,8 @@ class RPSApi(remote.Service):
             raise endpoints.ConflictException(
                 'A User with that name already exists!')
         user_key = ndb.Key(User, request.email)
-        print request.email
-        print user_key
+        # print request.email
+        # print user_key
         user = User(key=user_key, name=request.user_name, email=request.email)
         user.put()
         return StringMessage(message='User {} created!'.format(
@@ -125,6 +126,7 @@ class RPSApi(remote.Service):
                       name='make_move',
                       http_method='POST')
     def make_move(self, request):
+        '''Allows the user to make a move. Return the result of the round.'''
         name = getattr(request, "user_name")
         user = User.query(User.name == name).get()
         if not user:
@@ -135,7 +137,8 @@ class RPSApi(remote.Service):
         if game.game_over:
             return game.to_form('Game Over! Start a New Game')
         elif game.game_canceled:
-            return game.to_form('Game was canceled. Choose another game to play.')
+            return game.to_form('Game was canceled. Choose another \
+              game to play.')
         else:
             rules = {"ROCK": "SCISSORS", "PAPER": "ROCK", "SCISSORS": "PAPER"}
 
@@ -155,7 +158,8 @@ class RPSApi(remote.Service):
             if game.rounds_remaining == 0:
                 game.end_game(game.player_points, game.computer_points)
 
-            move_sumry = "Player:" + player + ",Computer:" + computer + ". " + message
+            move_sumry = "Player:" + player + ",Computer:" \
+                + computer + ". " + message
             print move_sumry
             # print len(game.move_log)
             game.move_log.append(move_sumry)
@@ -202,7 +206,6 @@ class RPSApi(remote.Service):
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=GameForm,
-                      # response_message=Hello,
                       path='games/{urlsafe_game_key}/cancel',
                       name='cancel_games',
                       http_method='GET')
@@ -223,7 +226,6 @@ class RPSApi(remote.Service):
 
     @endpoints.method(message_types.VoidMessage,
                       response_message=ScoreForms,
-                      # response_message=Hello,
                       path='scores/highest',
                       name='get_high_scores',
                       http_method='GET')
@@ -234,7 +236,6 @@ class RPSApi(remote.Service):
 
     @endpoints.method(message_types.VoidMessage,
                       response_message=RankForms,
-                      # response_message=Hello,
                       path='scores/rank',
                       name='get_user_rankings',
                       http_method='GET')
@@ -242,23 +243,20 @@ class RPSApi(remote.Service):
         """Returns a ranking of all the players that have played the game"""
         users = User.query().order(-User.win_rate)
         # for user in users:
-            # print user.name
+          # print user.name
         return RankForms(items=[user.to_form() for user in users])
         # return Hello(greeting="Hello World")
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=HistoryForm,
-                      # response_message=Hello,
                       path='games/{urlsafe_game_key}/history',
                       name='get_game_history',
                       http_method='GET')
     def get_game_history(self, request):
-        """Allows the user to cancel a game"""
+        """Returns a round by round history of the moves played"""
         game = get_by_urlsafe(request.urlsafe_game_key, RPS)
-        print game.move_log
-
         return game.game_history()
-        # return Hello(greeting="Hello World")
+
 
 
 APPLICATION = endpoints.api_server([RPSApi])
