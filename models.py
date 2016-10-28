@@ -11,23 +11,27 @@ class User(ndb.Model):
     """User profile"""
     name = ndb.StringProperty(required=True)
     email = ndb.StringProperty(required=True)
+    # the following two items were added -> make changes below.
+    total_points = ndb.IntegerProperty(default=0)
+    total_rounds = ndb.IntegerProperty(default=0)
     win_rate = ndb.FloatProperty(default=0)
 
-    @classmethod
     def to_form(self):
         """Returns a GameForm representation of the Game"""
-        form = RankForm()
-        form.name = self.name
-        form.email = self.email
-        form.win_rate = self.win_rate
-        return form
+        return RankForm(name=self.name,
+                        email=self.email,
+                        total_points=self.total_points,
+                        total_rounds=self.total_rounds,
+                        win_rate=self.win_rate)
 
 
 class RankForm(messages.Message):
     """GameForm for outbound game state information"""
     name = messages.StringField(1, required=True)
     email = messages.StringField(2, required=True)
-    win_rate = messages.FloatField(3)
+    total_points = messages.IntegerField(3, required=True)
+    total_rounds = messages.IntegerField(4, required=True)
+    win_rate = messages.FloatField(5)
 
 
 class RankForms(messages.Message):
@@ -92,7 +96,13 @@ class RPS(ndb.Model):
                           game_won=game_won, points=score, rounds=rounds)
         new_score.put()
         game_player = self.user.get()
-        game_player.win_rate = float(score) / rounds
+        print "Poiints:", game_player.total_points
+        game_player.total_points = game_player.total_points + player_points
+        print "Rounds", game_player.total_rounds
+        game_player.total_rounds = game_player.total_rounds + rounds
+
+        game_player.win_rate = float(
+            game_player.total_points) / game_player.total_rounds
         game_player.put()
         return "Jello World"
 

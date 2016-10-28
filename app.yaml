@@ -17,6 +17,10 @@ handlers:
 - url: /_ah/spi/.*
   script: rps.APPLICATION
 
+- url: /crons/send_reminder
+  script: main.app
+  # login: admin
+
 
 libraries:
 # You must include the Endpoints library if you wish to serve an API.

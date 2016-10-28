@@ -83,11 +83,10 @@ class RPSApi(remote.Service):
             raise endpoints.NotFoundException(
                 'A User with that name does not exist!')
         try:
-            user_key = user.key
-            print user_key
+            # print user.key
             print user.email
             u_key = ndb.Key(User, user.email)
-            print hash(u_key)
+            # print hash(u_key)
             game_id = RPS.allocate_ids(size=1, parent=u_key)[0]
             game_key = ndb.Key(RPS, game_id, parent=u_key)
             game = RPS.new_game(game_key, user.key, request.total_rounds)
@@ -95,20 +94,6 @@ class RPSApi(remote.Service):
         except:
             pass
         return game.to_form('Limber Up! Its rock paper scissor time!')
-
-    # def _to_form(self, gaym):
-    #     """Returns a GameForm """
-    #     form = GameForm()
-    #     for field in form.all_fields():
-    #         print field, field.name
-    #         if field.name == "message":
-    #           print "test"
-    #         elif field.name == "user_name":
-    #           print "test"
-    #         else:
-    #           setattr(form, field.name, getattr(gaym, field.name))
-    #     form.check_initialized()
-    #     return form
 
     # Get the status of any game
     @endpoints.method(request_message=GET_GAME_REQUEST,
@@ -172,10 +157,9 @@ class RPSApi(remote.Service):
 
             move_sumry = "Player:" + player + ",Computer:" + computer + ". " + message
             print move_sumry
-            print len(game.move_log)
+            # print len(game.move_log)
             game.move_log.append(move_sumry)
-            print game.move_log
-
+            # print game.move_log
             game.put()
 
             return game.to_form("Computer played %s. %s" % (computer, message))
@@ -249,33 +233,18 @@ class RPSApi(remote.Service):
         return ScoreForms(items=[score.to_form() for score in scores])
 
     @endpoints.method(message_types.VoidMessage,
-                      response_message=RankForm,
+                      response_message=RankForms,
                       # response_message=Hello,
                       path='scores/rank',
                       name='get_user_rankings',
                       http_method='GET')
-    def get_user_rankings(self, request):
+    def get_user_rankings(self, unused_request):
         """Returns a ranking of all the players that have played the game"""
-        # users = User.query()
+        users = User.query().order(-User.win_rate)
         # for user in users:
-        #   points = 0
-        #   rounds = 0
-        #   print user.name
-        #   print ndb.Key(User, user.name)
-        #   scores = Score.query(Score.user==ndb.Key(User, user.email))
-        #   for score in scores:
-        #     points = points + score.points
-        #     print "points:", points
-        #     rounds = rounds + score.rounds
-        #     print "rounds:", rounds
-
-        # # return ScoreForms(items=[score.to_form() for score in scores])
-        users = User.query().order(User.win_rate)
-        for user in users:
-          print user.name
-        return RankForms(items=[user.to_form() for user in users])    
+            # print user.name
+        return RankForms(items=[user.to_form() for user in users])
         # return Hello(greeting="Hello World")
-
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=HistoryForm,

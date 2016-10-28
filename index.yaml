@@ -14,3 +14,9 @@ indexes:
   properties:
   - name: points
   - name: date
+
+- kind: Score
+  properties:
+  - name: points
+    direction: desc
+  - name: date
