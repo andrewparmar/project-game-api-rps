@@ -26,33 +26,47 @@ This will allow you to run api explorer locally ove http. Make sure you choose t
 Explaination of each of the endpoiints
 --------------------------------------
 
-rock_paper_scissors.create_user
+rock_paper_scissors.ncreate_user
 	Create a User. Requires a unique username
+	Takes two arguments, the user's email address, and a username.
+
 rock_paper_scissors.new_game
-	Create a new game
+	Create a new game.
+	Takes two argument, a username and an integer which is the desired number of rounds for the game. Ideally, this should be an odd number 3 or above.
+
 rock_paper_scissors.make_move
+	Allows the user to make a move. Return the result of the round
+	Takes in two arguments. The move which is one of ROCK, PAPER or SCISSOR. The second argument is the username. This endpoint also invokes the computer to make a move. The result of the round is then computed and the result is displayed. Each time a move is made, the rounds left decreases by one until the game is over. At this point, the complete score and outcome of the game is calculated and saved.
 
 rock_paper_scissors.get_game
 	Return the current game state.
+	Allows the user to retrive the state of any game. Takes the games unique key as the only argument.
+
 rock_paper_scissors.cancel_games
 	Allows the user to cancel a game
+	Takes the unique game key as the argument. Cancels the game by setting game_cancelled = True. Once cancelled, no moves can be played for the remainder of the rounds of the game.
+
 rock_paper_scissors.get_game_history
-	Allows the user to cancel a game
+	Returns a round by round history of the moves played
+	Take the unique game key as the argument. Returns a complete history of all the moves made by the player and the computer during each round. Also states the winner of the round againt each pair of moves for each round.
+
 rock_paper_scissors.get_scores
-	Return all scores
+	Return all scores from each game stored in datastore
+	Does not take any arguments. Returns the point tally for player and computer for each game in the datastore.
+
 rock_paper_scissors.get_high_scores
-	Allows the user to cancel a game
+	Returns lis of all the games in datastore, while sorting by highest score first.
+	Does not take any arguments.
+
 rock_paper_scissors.get_user_scores
-	Returns all of an individual User's scores
+	Returns all of an individual User's scores for each game. Take in the username as the only argument.
+
 rock_paper_scissors.get_user_games
-	Returns all of a User's active games
+	Returns all games created by a user. Takes in the username as the only argument.
 
+rock_paper_scissor.get_user_rankings
+	Returns a list of all the users, ordered by total win_rate. The win rate is caculated by dividing all the points won by a users across all games, divided by the total number of rounds played across all games. The sort order is highest to lowest. The higher the win_rate, the higher the users ranking.
 
+Scorekeeping
 
-
-
-
-
-
-rock_paper_scissors.sayHello
-
+The scoring system is based on wins and losses against individual rounds in each rock paper scissor game. Each point won by the player adds one to the players score. Each win by the computer subtracs from the players score. However, the users score cannot drop below 0.
