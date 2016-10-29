@@ -1,0 +1,17 @@
+### Reflections on the Desing of RPS.
+
+###What additional properties did you add to your models and why?
+
+- As RPS is a two player game, but my implementation allows a single user to play against the computer itself. With this regard, it becaem important to collect points scored not just for the user, but also for the comupter, as the final tally between player and computer would determine the winner of the game.
+
+- In order to order items by rank, I had to come up with a metric of what one users perfomance was with respect to another. For this I decided to count the total points and total rounds played by each user. The rank then would be based on the percentage of rounds won by the player over the course of their RPS gaming history.
+
+-  Instead of gathering all hisotrical game play data elsewhere, I chose to store it as an attribute of the RPS class itself.  I also added game_history as a classsmethod to the main RPS class for easy retrieval of the play by play moves for each game.
+
+- Whether a game is canceled or not is also an inherent property of the game itself. I added an additonal boolean property game_canceled which stored this information. I could have just made the game_over property true, but then it would be tedious to differentiate between completed games and cancelled games. 
+
+## What were some of the trade-offs or struggles you faced when implementing the new game logic?
+
+The biggest struggle was getting the logic down in a concise form. I started off with a really long list of if statements, but moved over to a keypair style after some failed attempts and research.
+
+The second item I struggled with was savig the gameplay history. There was no easy way to do this as to I had to store not just a list of moves of the player, but alos of the computer, and aditionally the result of each round too. AFter some thought, I realied that I was already constructing a message at the end of each move that returned a complete gameplay in one sentence. I decided to save these messages as my history.
