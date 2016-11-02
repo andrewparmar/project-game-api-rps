@@ -3,7 +3,7 @@ entities used by the game Rock-Paper-Scissors.
 """
 
 from datetime import date
-from protorpc import messages, message_types
+from protorpc import messages
 from google.appengine.ext import ndb
 
 

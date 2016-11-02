@@ -1,6 +1,6 @@
 ### Reflections on the Desing of RPS.
 
-###What additional properties did you add to your models and why?
+## What additional properties did you add to your models and why?
 
 - As RPS is a two player game, but my implementation allows a single user to play against the computer itself. With this regard, it becaem important to collect points scored not just for the user, but also for the comupter, as the final tally between player and computer would determine the winner of the game.
 

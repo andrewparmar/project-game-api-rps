@@ -26,6 +26,9 @@ USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
                                            email=messages.StringField(2))
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
 GET_GAME_REQUEST = endpoints.ResourceContainer(
+    urlsafe_game_key=messages.StringField(1),
+    user_name=messages.StringField(2))
+GET_GAME_REQUEST2 = endpoints.ResourceContainer(
     urlsafe_game_key=messages.StringField(1))
 MAKE_MOVE_REQUEST = endpoints.ResourceContainer(MakeMoveForm,
                                                 urlsafe_game_key=messages.StringField(1),)
@@ -84,7 +87,7 @@ class RPSApi(remote.Service):
             raise endpoints.NotFoundException(
                 'A User with that name does not exist!')
         try:
-            # print user.key
+            print user.key
             print user.email
             u_key = ndb.Key(User, user.email)
             # print hash(u_key)
@@ -97,7 +100,7 @@ class RPSApi(remote.Service):
         return game.to_form('Limber Up! Its rock paper scissor time!')
 
     # Get the status of any game
-    @endpoints.method(request_message=GET_GAME_REQUEST,
+    @endpoints.method(request_message=GET_GAME_REQUEST2,
                       response_message=GameForm,
                       path='game/{urlsafe_game_key}',
                       name='get_game',
@@ -134,13 +137,22 @@ class RPSApi(remote.Service):
                 'A User with that name does not exist!')
 
         game = get_by_urlsafe(request.urlsafe_game_key, RPS)
+        if not game:
+            raise endpoints.NotFoundException('Game not found!')
+
+        # print "game.user:", game.user
+        game_initiator = User.query(User.key == game.user).get().name
+        if game_initiator != name:
+            raise endpoints.ForbiddenException(
+                'Not authorized to make move. Only player:{} can make a move'.format(game_initiator))
         if game.game_over:
             return game.to_form('Game Over! Start a New Game')
         elif game.game_canceled:
             return game.to_form('Game was canceled. Choose another \
               game to play.')
         else:
-            rules = {"ROCK": "SCISSORS", "PAPER": "ROCK", "SCISSORS": "PAPER"}
+            rules = {"ROCK": "SCISSORS",
+                     "PAPER": "ROCK", "SCISSORS": "PAPER"}
 
             player = str(getattr(request, "play"))
             computer = self.computer_move()
@@ -199,6 +211,9 @@ class RPSApi(remote.Service):
     def get_user_games(self, request):
         """Returns all of a User's active games"""
         user = User.query(User.name == request.user_name).get()
+        if not user:
+            raise endpoints.NotFoundException(
+                'A User with that name does not exist!')
         # print "test", user
         # print user.email
         gamez = RPS.query(ancestor=ndb.Key(User, user.email))
@@ -213,6 +228,10 @@ class RPSApi(remote.Service):
         """Allows the user to cancel a game"""
         game = get_by_urlsafe(request.urlsafe_game_key, RPS)
         if game:
+            game_initiator = User.query(User.key == game.user).get().name
+            if game_initiator != getattr(request, "user_name"):
+                raise endpoints.ForbiddenException(
+                  'Not authorized to cancel game.'.format(game_initiator))
             if game.game_over:
                 return game.to_form('Game is already over. Cannot cancel.')
             elif game.game_canceled:
@@ -243,11 +262,11 @@ class RPSApi(remote.Service):
         """Returns a ranking of all the players that have played the game"""
         users = User.query().order(-User.win_rate)
         # for user in users:
-          # print user.name
+        # print user.name
         return RankForms(items=[user.to_form() for user in users])
         # return Hello(greeting="Hello World")
 
-    @endpoints.method(request_message=GET_GAME_REQUEST,
+    @endpoints.method(request_message=GET_GAME_REQUEST2,
                       response_message=HistoryForm,
                       path='games/{urlsafe_game_key}/history',
                       name='get_game_history',
@@ -256,7 +275,6 @@ class RPSApi(remote.Service):
         """Returns a round by round history of the moves played"""
         game = get_by_urlsafe(request.urlsafe_game_key, RPS)
         return game.game_history()
-
 
 
 APPLICATION = endpoints.api_server([RPSApi])
